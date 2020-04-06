@@ -11,40 +11,37 @@ cols_to_use_output = columns[len(columns)-1:]
 
 x = pd.read_csv("../Data/housepricedata.csv", usecols = cols_to_use_input)
 y = pd.read_csv("../Data/housepricedata.csv", usecols = cols_to_use_output)
- 
-xTrain, xTest, yTrain, yTest = train_test_split(x, y, test_size = 0.2, random_state = 0)
 
-xTrain = xTrain.to_numpy() 
-yTrain = yTrain.to_numpy()
-
-xTest = xTest.to_numpy() 
-yTest = yTest.to_numpy()  
-
+x = x.to_numpy()
+y = y.to_numpy()
 ################   INPUT PARAMS   ###################
 no_of_layers = 3
-no_of_nodes = [xTrain.shape[1],2,1]
-data_scaler = 'standardization'
-activations = ['sigmoid','sigmoid']
-no_of_iters = 3
-size_of_batch = 1000
-learning_rate = 0.01
+no_of_nodes = [10,5,1]
+data_scaler = 'standardizaion'
+activations = ['relu','sigmoid']
+no_of_iters = 100000
+size_of_batch = 1168
+learning_rate = 0.0001
 #####################################################
 
 if data_scaler == 'standardization':
-    xTrain = preprocessing.scale(xTrain)
+    x = preprocessing.scale(x)
 else:
-    xTrain = preprocessing.MinMaxScaler.transform(xTrain)
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x = min_max_scaler.fit_transform(x)
+
+xTrain, xTest, yTrain, yTest = train_test_split(x, y, test_size = 0.2, random_state = 0)
 
 ##Creating the initial population.
 weights = []
 bias = []
 
 for i in numpy.arange(0, no_of_layers-1):
+    #numpy.random.seed(0)
     layera = no_of_nodes[i]
     layerb = no_of_nodes[i+1]
-    weight_layer = numpy.random.uniform(low=-0.5, high=0.5, 
-                                                 size=(layera, layerb))
-    bias_layer = numpy.random.randn(1, layerb)
+    weight_layer = numpy.random.randn(layerb,layera)/numpy.sqrt(layera)
+    bias_layer = numpy.zeros((layerb, 1))
     weights.append(weight_layer)
     bias.append(bias_layer)
 ##################################################
@@ -57,18 +54,15 @@ for itno in range(no_of_iters):
                 y_batch = yTrain[i:i+size_of_batch]
                 i = i+size_of_batch
                 plain_values, activated_values = NN.forwardpropogation(x_batch, weights,activations,bias)
-                dweights, dbias = NN.backpropagation(y_batch, plain_values, activated_values, weights, activations)
-                weights = [w+learning_rate*dwt for w,dwt in  zip(weights, dweights)]
-                bias = [w+learning_rate*dbs for w,dbs in  zip(bias, dbias)]
-                print('loss = '+str(NN.loss_function(activated_values[-1],y_batch)))
-
-plain_values, activated_values = NN.forwardpropogation(xTrain, weights,activations,bias)
-predictions = activated_values[-1]
-pred = numpy.copy(predictions)
-pred[pred>=0.5] = 1
-pred[pred<0.5] = 0
-print(pred)
-    
+                if itno%1000 == 0 or itno==0:
+                    print('loss = '+str(NN.loss_function(activated_values[-1],y_batch)))
+                delta = NN.backpropagation(y_batch, plain_values, activated_values, weights, activations,no_of_layers)
+                for layer in range(no_of_layers-1):
+                    weights[layer] = weights[layer] - learning_rate * delta["dweights"+str(layer)]
+                    bias[layer] = bias[layer] - learning_rate * delta["dbias"+str(layer)]            
+                
+NN.evaluate(xTrain, yTrain, weights, activations, bias)
+NN.evaluate(xTest, yTest, weights, activations, bias)
 
 
 

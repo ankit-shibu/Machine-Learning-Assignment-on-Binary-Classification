@@ -28,16 +28,18 @@ def derivative_tanh(inpt):
 
 def derivative_relu(inpt):
     inp = numpy.copy(inpt)
-    inp[inp<0] = 0
+    inp[inp<=0] = 0
+    inp[inp>0] = 1
     return inp
 
 def forwardpropogation(x, weights, activations, bias):
         r1 = numpy.copy(x)
+        r1 = r1.T
         plain_values = []
         activated_values = [r1]
         for i in range(len(weights)):
-            r1 = numpy.matmul(r1, weights[i])
-            plain_values.append(r1 + bias[i])
+            r1 = numpy.matmul(weights[i], r1) + bias[i]
+            plain_values.append(r1)
             if activations[i] == "relu":
                 r1 = relu(r1)
             elif activations[i] == "sigmoid":
@@ -49,92 +51,87 @@ def forwardpropogation(x, weights, activations, bias):
             activated_values.append(r1)
         return (plain_values, activated_values)
 
-def backpropagation1(y, plain_values, activated_values, weights, activations):
-        dweights = []  
-        dbias = []
-        delta = [None] * len(weights)  
-
-        if activations[-1] == "relu":
-                delta[-1] = ((y-activated_values[-1])*derivative_relu(plain_values[-1]))
-        elif activations[-1] == "sigmoid":
-                delta[-1] = ((y-activated_values[-1])*derivative_sigmoid(plain_values[-1]))
-        elif activations[-1] == "linear":
-                delta[-1] = ((y-activated_values[-1])*derivative_linear(plain_values[-1]))
-        elif activations[-1] == "tanh":
-                delta[-1] = ((y-activated_values[-1])*derivative_tanh(plain_values[-1]))
-                
-        for i in reversed(range(len(delta)-1)):
-            if activations[i] == "relu":
-                    delta[i] = delta[i+1]*derivative_relu(plain_values[i])
-            elif activations[i] == "sigmoid":
-                    delta[i] = delta[i+1]*derivative_sigmoid(plain_values[i])
-            elif activations[i] == "linear":
-                    delta[i] = delta[i+1]*derivative_linear(plain_values[i])
-            elif activations[i] == "tanh":
-                    delta[i] = delta[i+1]*derivative_tanh(plain_values[i])
-        print(delta[i].shape)           
+def backpropagation(y, plain_values, activated_values, weights, activations, layers):
+        delta = {}
         batch_size = y.shape[1]
-        dbias = [d.dot(numpy.ones((batch_size,1)))/float(batch_size) for d in delta]
-        dweights = [d.dot(activated_values[i].T)/float(batch_size) for i,d in enumerate(delta)]
+        A = activated_values[-1]
+        L = layers
+        y=y.T
+        dA = -numpy.divide(y,A) + numpy.divide(1-y,1-A)
+        dZ = dA * derivative_sigmoid(plain_values[L-2])
+        dW = dZ.dot(activated_values[L-2].T) / batch_size
+        db = numpy.sum(dZ, axis=1, keepdims=True) / batch_size
+        dAPrev = (weights[L-2].T).dot(dZ)
+        
+        delta["dweights" + str(L-2)] = dW
+        delta["dbias" + str(L-2)] = db
 
-        return dweights, dbias
+        for l in range(layers - 1, 1, -1):
+            dZ = dAPrev * derivative_sigmoid(plain_values[l-2])
+            dW = 1. / batch_size * dZ.dot(activated_values[l-2].T)
+            db = 1. / batch_size * numpy.sum(dZ, axis=1, keepdims=True)
+            if l > 1:
+                dAPrev = weights[l-2].T.dot(dZ)
 
-def backpropagation(y, plain_values, activated_values, weights, activations):
-         dweights = []  
-         dbias = []
-         rweights = []
-         rbias = []
-         
-         dAL = - (numpy.divide(y, activated_values[-1]) - numpy.divide(1 - y, 1 - activated_values[-1]))
-         dA_prev = dAL
-         for l in reversed(range(len(weights))):
-                dA_curr = dA_prev
-                
-                W_curr = weights[l]
-                Z_curr = plain_values[l]
-                A_prev = activated_values[l]
-        
-                dA_prev, dW_curr, db_curr = linear_activation_backward(dA_curr, Z_curr, A_prev, W_curr, activations[l])
-        
-                rweights.append(dW_curr)
-                rbias.append(db_curr)
-         
-         for l in reversed(range(len(weights))):
-             dweights.append(rweights[l])
-             dbias.append(rbias[l])
+            delta["dweights" + str(l-2)] = dW
+            delta["dbias" + str(l-2)] = db
 
-         dweights = numpy.array(dweights)
-         dbias = numpy.array(dbias)
-         return dweights, dbias
-        
-def linear_activation_backward(dA, Z, A_prev, W, activation):
-            if activation == "relu":
-                dZ = dA * derivative_relu(Z)
-                dA_prev, dW, db = linear_backward(dZ, A_prev, W)
-            elif activation == "sigmoid":
-                dZ = derivative_relu(Z)
-                dA_prev, dW, db = linear_backward(dZ, A_prev, W)
-            elif activation == "linear":
-                dZ = dA * derivative_linear(dA, Z)
-                dA_prev, dW, db = linear_backward(dZ, A_prev, W)
-            elif activation == "tanh":
-                dZ = dA * derivative_tanh(dA, Z)
-                dA_prev, dW, db = linear_backward(dZ, A_prev, W)
-        
-            return dA_prev, dW, db
-        
-def linear_backward(dZ, A_prev, W):
-            m = A_prev.shape[1]     
-            dW = numpy.dot(A_prev.T, dZ) / m
-            db = numpy.sum(dZ, axis=1, keepdims=True) / m
-            dA_prev = numpy.dot(dZ, W.T)
-        
-            return dA_prev, dW, db
+        return delta        
     
 def loss_function(prediction, actual):
+   actual=actual.T
    size = actual.shape[1]
    loss = numpy.multiply(numpy.log(prediction),actual) + numpy.multiply(1 - actual, numpy.log(1 - prediction))
-   return - numpy.sum(loss) / size
+   loss = - numpy.sum(loss)
+   return  loss / size
+
+def evaluate(x, y, weights, activations, bias):
+    plain_values, activated_values = forwardpropogation(x, weights,activations,bias)
+    predictions = activated_values[-1]
+    pred = numpy.copy(predictions)
+    ylabel = []
+    for i in range(pred.shape[1]):
+        if pred[0][i] > 0.5:
+            ylabel.append(1)
+        else:
+            ylabel.append(0)
+
+    ytest = y
+    
+    tp = 0
+    fp = 0
+    tn = 0
+    fn = 0
+
+    for i in range(len(ylabel)):
+        if ytest[i] == ylabel[i] and ytest[i] == 1 :
+            tp = tp+1
+        elif ytest[i] == ylabel[i] and ytest[i] == 0:
+            tn = tn+1
+        if ytest[i] != ylabel[i] and ytest[i] == 1 :
+            fn = fn + 1
+        elif ytest[i] != ylabel[i] and ytest[i] == 0:
+            fp = fp + 1
+
+    print("True Positives = "+str(tp))
+    print("False Positives = "+str(fp))
+    print("True Negatives = "+str(tn))
+    print("False Negatives = "+str(fn))
+
+    Precision = tp/(tp+fp)
+    Accuracy = (tp+tn)/(tp+tn+fp+fn)
+    Recall = tp/(tp+fn)
+    
+    F1_score = 2*Precision*Recall/(Precision+Recall)
+    FPR = fp/(fp+tn)
+    Specificity = 1 - FPR
+    print("Precision = "+str(Precision))
+    print("Accuracy = "+str(Accuracy))
+    print("Recall = "+str(Recall))
+
+    print("F1 Score = "+str(F1_score))
+    print("FPR = "+str(FPR))
+    print("Specificity = "+str(Specificity))
 
     
 
