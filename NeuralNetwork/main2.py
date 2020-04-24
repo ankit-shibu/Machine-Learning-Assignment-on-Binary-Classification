@@ -16,14 +16,14 @@ y = pd.read_csv("../Data/housepricedata.csv", usecols = cols_to_use_output)
 x = x.to_numpy()
 y = y.to_numpy()
 ################   INPUT PARAMS   ###################
-no_of_layers = 3
-no_of_nodes = [10,3,1]
+no_of_layers = 4
+no_of_nodes = [10, 8, 8,1]
 data_scaler = 'standardizaion'
-activations = ['relu','sigmoid']
-no_of_iters = 50000
+activations = ['relu','relu','sigmoid']
+no_of_iters = 100000
 size_of_batch = 1168
-learning_rate = 0.0001
-dropout_rate = 0.3
+learning_rate = 0.00001
+dropout_rate = 0.0
 plot = False
 #####################################################
 
@@ -43,7 +43,7 @@ for i in numpy.arange(0, no_of_layers-1):
     #numpy.random.seed(0)
     layera = no_of_nodes[i]
     layerb = no_of_nodes[i+1]
-    weight_layer = numpy.random.randn(layerb,layera)/numpy.sqrt(layera) #Xavier Initialization - Make your Own Neural Network by Tariq Rashid.
+    weight_layer = numpy.random.randn(layerb,layera)/numpy.sqrt(layera)
     bias_layer = numpy.zeros((layerb, 1))
     weights.append(weight_layer)
     bias.append(bias_layer)
@@ -57,25 +57,24 @@ for itno in range(no_of_iters):
                 x_batch = xTrain[i:i+size_of_batch]
                 y_batch = yTrain[i:i+size_of_batch]
                 i = i+size_of_batch
-                plain_values, activated_values = NN.forwardpropogation(x_batch, weights,activations,bias)
+                dropout_weights, dropout_bias, x_batch, active_nodes = NN.dropout(dropout_rate, weights, x_batch, bias)
+                plain_values, activated_values = NN.forwardpropogation(x_batch, dropout_weights,activations,dropout_bias)
                 if itno%1000 == 0 or itno==0:
                     plot_x.append(itno)
                     loss = NN.loss_function(activated_values[-1],y_batch)
                     plot_y.append(loss)
                     print('loss = '+str(loss))
-                delta = NN.backpropagation(y_batch, plain_values, activated_values, weights, activations,no_of_layers)
+                delta = NN.backpropagation(y_batch, plain_values, activated_values, dropout_weights, activations,no_of_layers)
                 for layer in range(no_of_layers-1):
-                    weights[layer] = weights[layer] - learning_rate * delta["dweights"+str(layer)]
-                    bias[layer] = bias[layer] - learning_rate * delta["dbias"+str(layer)]            
+                    dropout_weights[layer] = dropout_weights[layer] - learning_rate * delta["dweights"+str(layer)]
+                    dropout_bias[layer] = dropout_bias[layer] - learning_rate * delta["dbias"+str(layer)]
+                weights, bias = NN.updateWeights(weights, dropout_weights, active_nodes, bias, dropout_bias)
                 
-NN.evaluate(xTrain, yTrain, weights, activations, bias, "training6")
-NN.evaluate(xTest, yTest, weights, activations, bias,"testing6")
+NN.evaluate(xTrain, yTrain, weights, activations, bias, "training5")
+NN.evaluate(xTest, yTest, weights, activations, bias,"testing5")
 if plot:
-        plt.plot(plot_x,plot_y)
-        plt.xlabel("Number of iterations")
-        plt.ylabel("Loss")
-        plt.title("Loss Function convergence")
-        plt.savefig("Image/lossfunction.png")
+    plt.plot(plot_x,plot_y)
+    plt.savefig("Image/lossfunction.png")
 
 
 

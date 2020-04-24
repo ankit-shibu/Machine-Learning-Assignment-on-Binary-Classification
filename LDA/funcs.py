@@ -23,16 +23,24 @@ def covariance_matrix(x):
     covariance_matrix = (1 / (n-1)) * (x - x.mean(0)).T.dot(x - x.mean(0))
     return np.array(covariance_matrix, dtype=float)
 
-def plot_normal(x1, x2):
+def plot_normal(x1, x2, dataset):
     x = np.linspace(-20, 20, 100)
     
     ypos = scipy.stats.norm.pdf(x, x1.mean(0), x1.std(0))
     yneg = scipy.stats.norm.pdf(x, x2.mean(0), x2.std(0))
     
-    plt.plot(x, ypos, color='red')
-    plt.plot(x, yneg, color='blue')
+    plt.plot(x, ypos, color='yellow',label='+ve pts')
+    plt.plot(x, yneg, color='violet',label='-ve pts')
+    plt.legend()
+    plt.savefig("Image/"+dataset+"_boundary.png")
+    plt.clf()
 
-def classify(x, classifier, thres):
+def  plot_classification(x,color,dataset):
+    y = [0]*len(x)
+    plt.scatter(x, y, c=color)
+    plt.savefig("Image/"+dataset+"_result.png")
+
+def classify(x, classifier, thres, dataset):
     ylabel = []
     x = x.dot(classifier)
     for i in range(len(x)):
@@ -40,10 +48,10 @@ def classify(x, classifier, thres):
             ylabel.append(1)
         else:
             ylabel.append(0)
-    
+    plot_classification(x,ylabel,dataset)
     return ylabel
 
-def evaluate(ylabel, ytest):
+def evaluate(ylabel, ytest, dataset):
     tp = 0
     fp = 0
     tn = 0
@@ -58,6 +66,9 @@ def evaluate(ylabel, ytest):
             fn = fn + 1
         elif ytest[i] != ylabel[i] and ytest[i] == 0:
             fp = fp + 1
+    
+    metrics = pd.Series([])
+    value = pd.Series([])
 
     print("True Positives = "+str(tp))
     print("False Positives = "+str(fp))
@@ -78,6 +89,45 @@ def evaluate(ylabel, ytest):
     print("F1 Score = "+str(F1_score))
     print("FPR = "+str(FPR))
     print("Specificity = "+str(Specificity))
+    
+    metrics[0] = "True Positives"
+    metrics[1] = "False Positives"
+    metrics[2] = "True Negatives"
+    metrics[3] = "False Negatives"
+    metrics[4] = "Precision"
+    metrics[5] = "Accuracy"
+    metrics[6] = "Recall"
+    metrics[7] = "F1 Score"
+    metrics[8] = "FPR"
+    metrics[9] = "Specificity"
+
+    value[0] = tp
+    value[0] = fp
+    value[0] = tn
+    value[0] = fn
+    value[0] = Precision
+    value[0] = Accuracy
+    value[0] = Recall
+    value[0] = F1_score
+    value[0] = FPR
+    value[0] = Specificity
+    
+    resdf = pd.DataFrame({
+        "TP":tp,
+        "FP":fp,
+        "TN":tn,
+        "FN":fn,
+        "Precision":Precision,
+        "Accuracy":Accuracy,
+        "Recall":Recall,
+        "F1_score":F1_score,
+        "FPR":FPR,
+        "Specificity":Specificity
+        },
+        index=[0]
+    )
+
+    resdf.to_csv("Result/"+dataset+"_metric1.csv")
     
     
     

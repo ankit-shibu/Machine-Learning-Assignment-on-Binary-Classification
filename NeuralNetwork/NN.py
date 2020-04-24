@@ -1,5 +1,7 @@
 import numpy
 import math
+import pandas as pd
+import random 
 
 def sigmoid(inpt):
     return 1.0/(1.0+numpy.exp(-1*inpt))
@@ -85,7 +87,50 @@ def loss_function(prediction, actual):
    loss = - numpy.sum(loss)
    return  loss / size
 
-def evaluate(x, y, weights, activations, bias):
+def dropout(rate, weights, x, bias):
+    drop_weights=[]
+    drop_bias = []
+    active_nodes = []
+    rate = 1 - rate
+    input_nodes = weights[0].shape[1]
+    active_input_nodes = int(input_nodes * 1)
+    active_prev_layer = sorted(random.sample(range(0, input_nodes), 
+                              active_input_nodes))
+    active_nodes.append(active_prev_layer)
+    x = x[:,active_prev_layer]
+    for i in range(len(weights)-1):
+        w = weights[i]
+        nodes = weights[i].shape[0]
+        active_layer_nodes = int(nodes * rate)
+        active_new_layer = sorted(random.sample(range(0, nodes), 
+                              active_layer_nodes))
+        w = w[:,active_prev_layer]
+        w = w[active_new_layer]
+        drop_bias.append(bias[i][active_new_layer])
+        drop_weights.append(w)
+        active_prev_layer = active_new_layer
+        active_nodes.append(active_prev_layer)
+    
+    w = weights[-1]
+    w = w[:,active_prev_layer]
+    drop_bias.append(bias[-1])
+    drop_weights.append(w)
+    
+    return drop_weights, drop_bias, x, active_nodes
+
+def updateWeights(weights, dropout_weights, active_nodes, bias, dropout_bias):
+    
+    for i in range(len(weights)-1):
+        temp = weights[i][:,active_nodes[i]]
+        temp[active_nodes[i+1]] = dropout_weights[i]
+        weights[i][:,active_nodes[i]] = temp
+        bias[i][active_nodes[i+1]] = dropout_bias[i]
+        
+    weights[-1][:,active_nodes[-1]] = dropout_weights[-1]
+    
+    return weights, bias
+        
+def evaluate(x, y, weights, activations, bias, name):
     plain_values, activated_values = forwardpropogation(x, weights,activations,bias)
     predictions = activated_values[-1]
     pred = numpy.copy(predictions)
@@ -103,6 +148,9 @@ def evaluate(x, y, weights, activations, bias):
     tn = 0
     fn = 0
 
+    metrics = pd.Series([])
+    value = pd.Series([])
+    
     for i in range(len(ylabel)):
         if ytest[i] == ylabel[i] and ytest[i] == 1 :
             tp = tp+1
@@ -132,6 +180,45 @@ def evaluate(x, y, weights, activations, bias):
     print("F1 Score = "+str(F1_score))
     print("FPR = "+str(FPR))
     print("Specificity = "+str(Specificity))
+    
+    metrics[0] = "True Positives"
+    metrics[1] = "False Positives"
+    metrics[2] = "True Negatives"
+    metrics[3] = "False Negatives"
+    metrics[4] = "Precision"
+    metrics[5] = "Accuracy"
+    metrics[6] = "Recall"
+    metrics[7] = "F1 Score"
+    metrics[8] = "FPR"
+    metrics[9] = "Specificity"
+
+    value[0] = tp
+    value[0] = fp
+    value[0] = tn
+    value[0] = fn
+    value[0] = Precision
+    value[0] = Accuracy
+    value[0] = Recall
+    value[0] = F1_score
+    value[0] = FPR
+    value[0] = Specificity
+    
+    resdf = pd.DataFrame({
+        "TP":tp,
+        "FP":fp,
+        "TN":tn,
+        "FN":fn,
+        "Precision":Precision,
+        "Accuracy":Accuracy,
+        "Recall":Recall,
+        "F1_score":F1_score,
+        "FPR":FPR,
+        "Specificity":Specificity
+        },
+        index=[0]
+    )
+
+    #resdf.to_csv("Result/Dropout/"+name+"_metrics.csv")
 
     
 

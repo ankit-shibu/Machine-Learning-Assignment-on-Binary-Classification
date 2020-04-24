@@ -1,0 +1,2 @@
+,TP,FP,TN,FN,Precision,Accuracy,Recall,F1_score,FPR,Specificity
+0,500,0,500,0,1.0,1.0,1.0,1.0,0.0,1.0

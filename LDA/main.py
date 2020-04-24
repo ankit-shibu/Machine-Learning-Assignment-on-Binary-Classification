@@ -6,7 +6,7 @@ import funcs
 ################# Configuration ##################
 datasets = ['a1_d1','a1_d2']
 thresholds = [-0.915, -4.4]
-plot = False
+plot = True
 #####################################################
 
 for i in range(2):
@@ -26,10 +26,11 @@ for i in range(2):
     xpos_transform = xpos.dot(classifier)
     xneg_transform = xneg.dot(classifier)
     
-    predictions = funcs.classify(x, classifier, thresholds[i])
-    print('Results for'+datasets[i])
-    funcs.evaluate(predictions, y)
+    predictions = funcs.classify(x, classifier, thresholds[i], datasets[i])
+
+    print('Results for '+datasets[i])
+    funcs.evaluate(predictions, y,datasets[i])
     print('\n\n\n')
     if plot == True:
-        funcs.plot_normal(xpos_transform, xneg_transform)
+        funcs.plot_normal(xpos_transform, xneg_transform, datasets[i])
     
