@@ -220,6 +220,22 @@ def evaluate(x, y, weights, activations, bias, name):
 
     #resdf.to_csv("Result/Dropout/"+name+"_metrics.csv")
 
+def minmax(data):
+        data = data.astype(float)
+        maxElement = numpy.amax(data, axis=0)
+        minElement = numpy.amin(data, axis=0)        
+        data = (data - minElement)/(maxElement-minElement)
+    
+        return data
+
+def standardization(data):
+        data = data.astype(float)
+        mean = numpy.mean(data, axis=0)
+        std = numpy.std(data, axis=0)        
+        data = (data - mean)/(std)
+    
+        return data
+
     
 
 

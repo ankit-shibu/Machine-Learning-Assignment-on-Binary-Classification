@@ -1,7 +1,6 @@
 import numpy
 import NN
 import pandas as pd
-from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
@@ -17,8 +16,8 @@ x = x.to_numpy()
 y = y.to_numpy()
 ################   INPUT PARAMS   ###################
 no_of_layers = 3
-no_of_nodes = [10,3,1]
-data_scaler = 'standardizaion'
+no_of_nodes = [10,5,1]
+data_scaler = 'min-max'
 activations = ['relu','sigmoid']
 no_of_iters = 50000
 size_of_batch = 1168
@@ -28,10 +27,10 @@ plot = False
 #####################################################
 
 if data_scaler == 'standardization':
-    x = preprocessing.scale(x)
+    x = NN.standardization(x)
+    print(x)
 else:
-    min_max_scaler = preprocessing.MinMaxScaler()
-    x = min_max_scaler.fit_transform(x)
+    x = NN.minmax(x)
 
 xTrain, xTest, yTrain, yTest = train_test_split(x, y, test_size = 0.2, random_state = 0)
 
