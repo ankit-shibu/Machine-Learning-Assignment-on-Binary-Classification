@@ -6,13 +6,16 @@ import funcs
 ################# Configuration ##################
 datasets = ['a1_d1','a1_d2']
 thresholds = [-0.915, -4.4]
-plot = True
+plot = False
 #####################################################
 
 for i in range(2):
     x = pd.read_csv("../Data/"+datasets[i]+".csv")
-    y = x["y"].to_numpy()
-    xpos, xneg, x = funcs.generate_two_classes(x)
+    xtrain = x[0:int(0.8*len(x))]
+    xtest = x[int(0.8*len(x)):len(x)]
+    ytrain = xtrain["y"].to_numpy()
+    ytest = xtest["y"].to_numpy()
+    xpos, xneg, x, xtest = funcs.generate_two_classes(xtrain, xtest)
 
     mean_diff = xpos.mean(0)-xneg.mean(0)
 
@@ -26,10 +29,10 @@ for i in range(2):
     xpos_transform = xpos.dot(classifier)
     xneg_transform = xneg.dot(classifier)
     
-    predictions = funcs.classify(x, classifier, thresholds[i], datasets[i])
+    predictions = funcs.classify(xtest, classifier, thresholds[i], datasets[i])
 
     print('Results for '+datasets[i])
-    funcs.evaluate(predictions, y,datasets[i])
+    funcs.evaluate(predictions, ytest,datasets[i])
     print('\n\n\n')
     if plot == True:
         funcs.plot_normal(xpos_transform, xneg_transform, datasets[i])

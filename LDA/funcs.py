@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.stats
 
-def generate_two_classes(x):
+def generate_two_classes(x, xtest):
     xpos = x[x["y"]==1]
     columns = xpos.columns.tolist()
     cols_to_use_input = columns[:len(columns)-1]
@@ -15,8 +15,9 @@ def generate_two_classes(x):
     xneg = xneg[cols_to_use_input]
     
     x = x[cols_to_use_input]
-        
-    return xpos, xneg, x
+    xtest = xtest[cols_to_use_input]
+      
+    return xpos, xneg, x, xtest
 
 def covariance_matrix(x):
     n = np.shape(x)[0]
@@ -32,19 +33,19 @@ def plot_normal(x1, x2, dataset):
     plt.plot(x, ypos, color='yellow',label='+ve pts')
     plt.plot(x, yneg, color='violet',label='-ve pts')
     plt.legend()
-    plt.savefig("Image/"+dataset+"_boundary.png")
+    plt.savefig("Image/"+dataset+"tt_boundary.png")
     plt.clf()
 
 def  plot_classification(x,color,dataset):
     y = [0]*len(x)
     plt.scatter(x, y, c=color)
-    plt.savefig("Image/"+dataset+"_result.png")
+    plt.savefig("Image/"+dataset+"tt_result.png")
 
 def classify(x, classifier, thres, dataset):
     ylabel = []
     x = x.dot(classifier)
     for i in range(len(x)):
-        if x[i] > thres:
+        if x[i+1000-len(x)] > thres:
             ylabel.append(1)
         else:
             ylabel.append(0)
@@ -127,7 +128,7 @@ def evaluate(ylabel, ytest, dataset):
         index=[0]
     )
 
-    resdf.to_csv("Result/"+dataset+"_metric1.csv")
+    #resdf.to_csv("Result/"+dataset+"tt_metric1.csv")
     
     
     

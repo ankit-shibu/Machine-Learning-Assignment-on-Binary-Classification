@@ -15,14 +15,14 @@ y = pd.read_csv("../Data/housepricedata.csv", usecols = cols_to_use_output)
 x = x.to_numpy()
 y = y.to_numpy()
 ################   INPUT PARAMS   ###################
-no_of_layers = 3
+no_of_layers = 3 
 no_of_nodes = [10,5,1]
 data_scaler = 'min-max'
 activations = ['relu','sigmoid']
 no_of_iters = 50000
 size_of_batch = 1168
 learning_rate = 0.0001
-dropout_rate = 0.3
+dropout_rate = 0.0
 plot = False
 #####################################################
 
